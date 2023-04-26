@@ -21,5 +21,15 @@
         "guzzlehttp/guzzle": "^7.2"
     },
     "minimum-stability": "dev",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Rombituon\\FrappeClient\\FrappeClientProvider"
+            ]
+        }
+    }
 }

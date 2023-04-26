@@ -3,6 +3,7 @@
 namespace Rombituon\FrappeClient;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Foundation\Console\AboutCommand;
 
 final class FrappeClientProvider extends ServiceProvider 
 {
@@ -10,11 +11,12 @@ final class FrappeClientProvider extends ServiceProvider
     public function boot(): void
     {
         $this->bootPublishing();
+        AboutCommand::add('Frappe Client', fn () => ['Version' => '1.0.0']);
         
     }
 
 
-    private function register(): void
+    public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/frappe.php', 'frappe');
     }
