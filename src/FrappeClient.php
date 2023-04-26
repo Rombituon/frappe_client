@@ -3,9 +3,11 @@
 namespace Rombituon\FrappeClient;
 use Rombituon\FrappeClient\Exceptions\FrappeException;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\ServerException;
 use Illuminate\Support\Facades\Http;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7;
+
 
 class FrappeClient 
 {
@@ -15,6 +17,7 @@ class FrappeClient
     private $httpClient;
     private $_contents;
     private $_authHeader;
+    private $_response;
     public function __construct()
     {
         
@@ -34,20 +37,21 @@ class FrappeClient
         return $this->_contents;
     }
 
-    private function _makeRequest($module_url, $options=[], $httpMethod='GET')
+    private function _makeRequest($module_url, $options=[], $httpMethod='GET', $headers = [])
     {
         try
         {
             $response = $this->httpClient->request($httpMethod,
                 $this->frappeUrlApi.$module_url,
                 [
-                    'headers'=> $this->_authHeader,
+                    'headers'=> array_push($this->_authHeader, $headers),
                     'query'=> $options
                 ]
             );
 
             if($response->getStatusCode()==200){
-                return json_decode($response->getBody()->getContents());
+                $data = json_decode($response->getBody()->getContents());
+                return $data->data;
             }
 
 
@@ -59,14 +63,14 @@ class FrappeClient
     }
 
 
-    public function get($module_url, $options=[])
+    public function doGet($module_url, $options=[], $headers=[])
     {
-        return $this->_makeRequest($module_url, $options, 'GET');
+        return $this->_makeRequest($module_url, $options, 'GET',$headers);
     }
 
-    public function post($module_url, $options=[])
+    public function doPost($module_url, $options=[], $headers=[])
     {
-        return $this->_makeRequest($module_url, $options, 'POST');
+        return $this->_makeRequest($module_url, $options, 'POST', $headers);
     }
 
     private function _buildUriForFrappeResource($url, $options)
@@ -95,6 +99,24 @@ class FrappeClient
         return $url;
     }
 
+    public function get()
+    {
+        $res = json_decode($this
+                    ->_response
+                    ->getBody()
+                    ->getContents());
+        return $res->data;
+    }
+
+    public function toJson()
+    {
+        $res = json_decode($this->
+                _response
+                ->getBody()
+                ->getContents());
+
+        return json_encode($res->data);
+    }
 
     public function resource($doctype, $options=[], $httpMethod='GET')
     {
@@ -111,15 +133,32 @@ class FrappeClient
                             ]
                         );
 
-            return json_decode($response->getBody()->getContents());
+            $this->_response = $response;
+
+            
+        }
+        catch(ServerException $e){
+
+            $this->_response = $e->getResponse();
+
+            
+            throw new FrappeException(
+                $this->_response->getReasonPhrase(), 
+                $this->_response->getStatusCode()
+            );
+            
         }
         catch(ClientException $e)
         {
+            $this->_response = $e->getResponse();
+
             throw new FrappeException(
-                $response->getReasonPhrase(), 
-                $response->getStatusCode()
+                $this->_response->getReasonPhrase(), 
+                $this->_response->getStatusCode()
             );
         }
+
+        return $this;
     }
 
     public function auth($throwable = false)
@@ -159,10 +198,6 @@ class FrappeClient
         
        
        
-    }
-
-    public function getHello(){
-        return 'Hello World!';
     }
 
 }
