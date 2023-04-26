@@ -13,16 +13,8 @@ final class FrappeClientProvider extends ServiceProvider
         
     }
 
-    // public function register()
-    // {
-    //     $this->app->bind('frappe', function()
-    //     {
-    //         return new FrappeClient();
-    //     });
-    // }
 
-
-    private function registerConfig(): void
+    private function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/frappe.php', 'frappe');
     }
