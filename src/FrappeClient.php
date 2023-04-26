@@ -69,17 +69,45 @@ class FrappeClient
         return $this->_makeRequest($module_url, $options, 'POST');
     }
 
+    private function _buildUriForFrappeResource($url, $options)
+    {
+        $query = [];
+        if(isset($options['filters'])){
+            $query['filters'] = json_encode($options['filters']);
+        }
+        if(isset($options['fields'])){
+            $query['fields'] = json_encode($options['fields']);
+        }
+        if(isset($options['limit_start'])){
+            $query['limit_start'] = json_encode($options['limit_start']);
+        }
+        if(isset($options['limit_page_length'])){
+            $query['limit_page_length'] = json_encode($options['limit_page_length']);
+        }
+        
+        if($query){
+            $url .= '?';
+            foreach($query as $key => $value){
+                $url .= $key.'='.$value.'&';
+            }
+        }
+
+        return $url;
+    }
+
 
     public function resource($doctype, $options=[], $httpMethod='GET')
     {
         $url = $this->frappeUrlResource . '/' . $doctype;
         try 
         {
-             $response = $this->httpClient->request($httpMethod,
-                            $url,
+
+            $buildUrl = $this->_buildUriForFrappeResource($url,$options);   
+
+            $response = $this->httpClient->request($httpMethod,
+                            $buildUrl,
                             [
-                                'headers'=>$this->_authHeader,
-                                'query'=> $options
+                                'headers'=>$this->_authHeader
                             ]
                         );
 
