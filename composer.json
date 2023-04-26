@@ -1,0 +1,25 @@
+{
+    "name": "rombituon/frappe_client",
+    "description": "Frappe client to access frappe application",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Rombituon\\FrappeClient\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Jurin Liyun",
+            "email": "jurinliyun@outlook.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "illuminate/http": "^8.6|^9.0|^10.0",
+        "illuminate/support": "^8.6|^9.0|^10.0",
+        "guzzlehttp/guzzle": "^7.2"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
