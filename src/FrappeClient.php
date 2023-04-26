@@ -99,6 +99,11 @@ class FrappeClient
         return $url;
     }
 
+    /**
+     * Gets the data from the response body as an object
+     *
+     * @return object The data from the response body.
+     */
     public function get()
     {
         $res = json_decode($this
@@ -195,9 +200,6 @@ class FrappeClient
 
             return false;
         }
-        
-       
-       
     }
 
 }

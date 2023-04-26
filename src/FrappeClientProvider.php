@@ -10,7 +10,16 @@ final class FrappeClientProvider extends ServiceProvider
     public function boot(): void
     {
         $this->bootPublishing();
+        
     }
+
+    // public function register()
+    // {
+    //     $this->app->bind('frappe', function()
+    //     {
+    //         return new FrappeClient();
+    //     });
+    // }
 
 
     private function registerConfig(): void
