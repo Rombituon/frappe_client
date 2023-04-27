@@ -32,11 +32,6 @@ class FrappeClient
         ];
     }
 
-    public function getAuthResponse()
-    {
-        return $this->_contents;
-    }
-
     private function _makeRequest($module_url, $options=[], $httpMethod='GET', $headers = [])
     {
         try
@@ -166,8 +161,9 @@ class FrappeClient
         return $this;
     }
 
-    public function auth($throwable = false)
+    public function ping()
     {
+        $_status = false;
         try {
             
                 $response = $this->httpClient->request('POST',
@@ -180,10 +176,10 @@ class FrappeClient
        
                 if($response->getStatusCode()==200){
                     $this->_contents = $response->getBody()->getContents();
-                    return true;
+                   $_status = true;
                 }elseif ($response->getStatusCode()==403){
                     $this->_contents = json_decode($response->getBody()->getContents());
-                    return false;
+                   $_status = false;
                 }
         
        
@@ -191,15 +187,16 @@ class FrappeClient
         }
         catch(ClientException $e){
 
-            if($throwable){
-                throw new FrappeException(
-                     $response->getReasonPhrase(), 
-                     $response->getStatusCode()
-                 );
-            } 
+            $this->_response = $e->getResponse()->getBody()->getContents();
 
-            return false;
+            $_status = false;            
         }
+
+        return json_encode([
+            'status'=>$_status,
+            'response'=>$this->_contents
+        ]);
+        
     }
 
 }
