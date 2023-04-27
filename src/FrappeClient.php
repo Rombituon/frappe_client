@@ -15,6 +15,8 @@ class FrappeClient
     private $token;
     private $frappeUrlResource;
     private $httpClient;
+    private $httpMethod;
+    private $frappeBuildUrlResource;
     private $_contents;
     private $_authHeader;
     private $_response;
@@ -25,6 +27,7 @@ class FrappeClient
         $this->token = config("frappe.api_token");
         $this->frappeUrlApi = config("frappe.url") . "/api/method";
         $this->frappeUrlResource = config("frappe.url") . "/api/resource";
+        $this->frappeVersion = config('frappe.version');
         $this->httpClient = new Client();
 
         $this->_authHeader = [
@@ -83,6 +86,19 @@ class FrappeClient
         if(isset($options['limit_page_length'])){
             $query['limit_page_length'] = json_encode($options['limit_page_length']);
         }
+
+        if(isset($options['sort_by'])){
+            $query['sort_by'] = json_encode($options['sort_by']);
+        }
+
+        if($this->frappeVersion=="14.*"){
+            if(isset($options['as_dict'])){
+                if($options['as_dict'] == 'False'){
+                    $query['as_dict'] = json_encode($options['as_dict']);
+                }  
+            }
+        }
+        
         
         if($query){
             $url .= '?';
@@ -91,6 +107,32 @@ class FrappeClient
             }
         }
 
+        // dd($url);
+
+        return $url;
+    }
+
+
+    /**
+     * Builds the url for frappe resource
+     * @param string $url
+     * @param string $docName
+     * @param string $crudType "R" for read, "U" for update, "D" for delete, "C" for create
+     * @return string
+     */
+    private function _buildUriForFrappeCRUDResource($url, $docName, $crudType="R")
+    {
+        if($crudType=="R" || $crudType=="U" || $crudType=="D"){
+
+            if($docName){
+               $url .= "/".$docName;
+               return $url; 
+            }
+
+            $url .= "/".$docType;
+            return $url; 
+        }
+        
         return $url;
     }
 
@@ -108,6 +150,154 @@ class FrappeClient
         return $res->data;
     }
 
+    public function create($data)
+    {
+        try{
+            if($this->httpMethod=='POST'){
+
+                $response = $this->httpClient->request($this->httpMethod,
+                                $this->frappeBuildUrlResource,
+                                [
+                                    'headers'=>$this->_authHeader,
+                                    'json'=>$data
+                                ]
+                            );
+
+                $res = json_decode($response
+                    ->getBody()
+                    ->getContents());
+
+                return $res->data;
+            }
+
+            throw new FrappeException(
+                "Accept only POST Method", 
+                "405"
+            );
+        }
+        catch(ServerException $e){
+
+
+
+            $this->_response = $e->getResponse();
+
+            // dd($e->getResponse()->getBody()->getContents());
+
+            
+            throw new FrappeException(
+                $this->_response->getReasonPhrase(), 
+                $this->_response->getStatusCode()
+            );
+            
+        }
+        catch(ClientException $e)
+        {
+            $this->_response = $e->getResponse();
+
+            throw new FrappeException(
+                $this->_response->getReasonPhrase(), 
+                $this->_response->getStatusCode()
+            );
+        }
+    }
+
+    public function delete()
+    {
+        try{
+            if($this->httpMethod=="DELETE"){
+
+                $response = $this->httpClient->request($this->httpMethod,
+                                $this->frappeBuildUrlResource,
+                                [
+                                    'headers'=>$this->_authHeader
+                                ]
+                            );
+
+                $res = json_decode($response
+                    ->getBody()
+                    ->getContents());
+
+                return $res->data;
+            }
+
+            throw new FrappeException(
+                "Accept only DELETE Method", 
+                "405"
+            );
+        }
+        catch(ServerException $e){
+
+            $this->_response = $e->getResponse();
+
+            
+            throw new FrappeException(
+                $this->_response->getReasonPhrase(), 
+                $this->_response->getStatusCode()
+            );
+            
+        }
+        catch(ClientException $e)
+        {
+            $this->_response = $e->getResponse();
+
+            throw new FrappeException(
+                $this->_response->getReasonPhrase(), 
+                $this->_response->getStatusCode()
+            );
+        }
+    }
+
+    public function update($data)
+    {
+
+        
+        try{
+            if($this->httpMethod=='PUT'){
+
+                $response = $this->httpClient->request($this->httpMethod,
+                                $this->frappeBuildUrlResource,
+                                [
+                                    'headers'=>$this->_authHeader,
+                                    'json'=>$data
+                                ]
+                            );
+
+                $res = json_decode($response
+                    ->getBody()
+                    ->getContents());
+
+                return $res->data;
+            }
+
+            throw new FrappeException(
+                "Accept only PUT Method", 
+                "405"
+            );
+        }
+        catch(ServerException $e){
+
+            $this->_response = $e->getResponse();
+
+            
+            throw new FrappeException(
+                $this->_response->getReasonPhrase(), 
+                $this->_response->getStatusCode()
+            );
+            
+        }
+        catch(ClientException $e)
+        {
+            $this->_response = $e->getResponse();
+
+            throw new FrappeException(
+                $this->_response->getReasonPhrase(), 
+                $this->_response->getStatusCode()
+            );
+        }
+        
+        
+    }
+
     public function toJson()
     {
         $res = json_decode($this->
@@ -118,22 +308,62 @@ class FrappeClient
         return json_encode($res->data);
     }
 
-    public function resource($doctype, $options=[], $httpMethod='GET')
+    public function resource($docType, $docName=null, $options=[], $crudType="R")
     {
-        $url = $this->frappeUrlResource . '/' . $doctype;
+        $url = $this->frappeUrlResource . '/' . $docType;
+
+        if($crudType=="R"){
+            $this->httpMethod = "GET";
+        }
+        elseif($crudType=="C"){
+            $this->httpMethod = "POST";
+        }
+        elseif($crudType=="U"){
+            $this->httpMethod = "PUT";
+        }
+        elseif($crudType=="D"){
+            $this->httpMethod = "DELETE";
+        }
+    
         try 
         {
 
-            $buildUrl = $this->_buildUriForFrappeResource($url,$options);   
+            if($docName && $crudType !="C")
+            {
+                $buildUrl = $this->_buildUriForFrappeCRUDResource($url,$docName,$crudType);   
+            }
+            elseif($docName==null && $crudType == "C")
+            {
 
-            $response = $this->httpClient->request($httpMethod,
+                $buildUrl = $this->_buildUriForFrappeCRUDResource($url,null,$crudType);
+            }
+            else{
+                $buildUrl = $this->_buildUriForFrappeResource($url,$options);  
+                
+                
+            }
+
+            $this->frappeBuildUrlResource = $buildUrl;
+
+           
+            // separate method
+            if($crudType=='R'){
+
+                $response = $this->httpClient->request($this->httpMethod,
                             $buildUrl,
                             [
                                 'headers'=>$this->_authHeader
                             ]
                         );
 
-            $this->_response = $response;
+                $this->_response = $response;
+            }
+            else
+            {
+                return $this;
+            }
+
+            
 
             
         }
